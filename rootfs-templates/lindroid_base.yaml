@@ -26,7 +26,7 @@ actions:
     chroot: true
     description: install packages
     packages:
-      - libhybris
+      #- libhybris
      # - libhybris-test
       - lindroid-quirks
       - nano

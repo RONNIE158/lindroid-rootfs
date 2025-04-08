@@ -27,7 +27,7 @@ actions:
     description: install packages
     packages:
       - libhybris
-      - libhybris-test
+     # - libhybris-test
       - lindroid-quirks
       - nano
       - strace

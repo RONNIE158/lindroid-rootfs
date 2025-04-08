@@ -8,7 +8,7 @@ import argparse
 
 # List of architectures and UIs
 architectures = ["arm64"]
-uis = ["plasma"]
+uis = ["base"]
 
 # Common suffix for all files
 suffix = datetime.today().strftime('%Y%m%d')

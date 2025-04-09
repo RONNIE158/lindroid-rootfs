@@ -1,6 +1,6 @@
 {{- $architecture := or .architecture "arm64" -}}
 {{- $suite := "trixie" -}}
-{{- $use_internal_repository := or .use_internal_repository "no" -}}
+{{- $use_internal_repository := or .use_internal_repository "yes" -}}
 
 {{- $username := or .username "lindroid" -}}
 {{- $password := or .password "lindroid" -}}
@@ -27,7 +27,7 @@ actions:
     description: install packages
     packages:
       #- libhybris
-     # - libhybris-test
+      #- libhybris-test
       - lindroid-quirks
       - nano
       - strace

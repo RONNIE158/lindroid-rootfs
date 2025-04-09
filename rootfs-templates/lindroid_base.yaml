@@ -1,6 +1,6 @@
 {{- $architecture := or .architecture "arm64" -}}
 {{- $suite := "trixie" -}}
-{{- $use_internal_repository := or .use_internal_repository "yes" -}}
+{{- $use_internal_repository := or .use_internal_repository "no" -}}
 
 {{- $username := or .username "lindroid" -}}
 {{- $password := or .password "lindroid" -}}

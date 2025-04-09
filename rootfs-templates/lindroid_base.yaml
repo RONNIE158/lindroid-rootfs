@@ -26,8 +26,8 @@ actions:
     chroot: true
     description: install packages
     packages:
-      #- libhybris
-      #- libhybris-test
+      - libhybris
+      - libhybris-test
       - lindroid-quirks
       - nano
       - strace
@@ -46,10 +46,10 @@ actions:
       - pipewire-alsa
       - pipewire-jack
 
-  - action: run
-    description: Set up default user
-    chroot: true
-    script: scripts/setup-user.sh {{ $username }} {{ $password }}
+  #- action: run
+    #description: Set up default user
+    #chroot: true
+    #script: scripts/setup-user.sh {{ $username }} {{ $password }}
 
   - action: run
     description: Set up system

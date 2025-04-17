@@ -1,4 +1,4 @@
-name: Build Lindroid Base RootFS
+name: Build Lindroid chroot
 
 on:
   workflow_dispatch:

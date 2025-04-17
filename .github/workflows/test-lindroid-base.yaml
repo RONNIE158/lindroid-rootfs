@@ -1,52 +1,60 @@
-name: Build Lindroid Base RootFS
+name: Build Lindroid RootFS
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-rootfs:
+  build:
     runs-on: ubuntu-latest
     env:
       SUITE: trixie
       ARCH: arm64
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+    # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Pull Droidian Rootfs Builder
-        run: docker pull quay.io/droidian/rootfs-builder:next-amd64
+    # Set up QEMU for emulation
+    - name: QEMU set-up
+      uses: docker/setup-qemu-action@v3
 
-      - name: Start container
-        run: |
-          echo "CONTAINER_HASH=$(docker run --detach --privileged \
-            -v /tmp/buildd-results:/buildd/out \
-            -v /dev:/host-dev \
-            -v /sys/fs/cgroup:/sys/fs/cgroup \
-            -v ${PWD}:/buildd/sources \
-            -v /lib/modules:/lib/modules \
-            --security-opt seccomp:unconfined \
-            quay.io/droidian/rootfs-builder:next-amd64 sleep infinity)" >> $GITHUB_ENV
+    # Create build directory
+    - name: Create build dir
+      run: mkdir -p /tmp/buildd-results
 
-      - name: Install dependencies inside container
-        run: |
-          docker exec $CONTAINER_HASH bash -c "\
-            apt update && \
-            apt install -y sudo debos qemu-user-static"
+    # Pull the container image
+    - name: Pull container
+      run: docker pull quay.io/droidian/rootfs-builder:next-amd64
 
-      - name: Setup qemu for ARM64
-        run: |
-         docker exec $CONTAINER_HASH bash -c "\
-         if [ ! -f /usr/bin/qemu-aarch64-static ]; then \
-         cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static; \
-         fi"
+    # Start the container with the necessary volumes
+    - name: Start Container
+      run: |
+        echo CONTAINER_HASH=$(docker run --detach --privileged \
+        -v /tmp/buildd-results:/buildd/out \
+        -v /dev:/host-dev \
+        -v /sys/fs/cgroup:/sys/fs/cgroup \
+        -v ${PWD}:/buildd/sources \
+        --security-opt seccomp:unconfined \
+        quay.io/droidian/rootfs-builder:next-amd64 /sbin/init) \
+        >> $GITHUB_ENV
 
-      - name: Run Debos in container with --disable-fakemachine
-        run: |
-          docker exec $CONTAINER_HASH bash -c "\
-            cd /buildd/sources && \
-            debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+    # Set up qemu-aarch64-static in the container
+    - name: Set up qemu-aarch64-static
+      run: docker exec $CONTAINER_HASH bash -c "\
+        cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static"
 
-      - name: Stop container
-        if: always()
-        run: docker stop $CONTAINER_HASH || true
+    # Run debos to build the rootfs
+    - name: Run Debos to build rootfs
+      run: docker exec $CONTAINER_HASH bash -c "\
+        cd /buildd/sources && \
+        debos rootfs-templates/lindroid_base.yaml"
+
+    # Copy the result to the host
+    - name: Copy result to host
+      run: docker cp $CONTAINER_HASH:/buildd/out /tmp/buildd-results

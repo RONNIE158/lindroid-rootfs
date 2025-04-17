@@ -56,6 +56,16 @@ actions:
     chroot: true
     script: scripts/setup-system.sh {{ $hostname }}
 
+  - action: run
+    chroot: true
+    description: Safe apt clean (skip if no systemd-nspawn)
+    command: |
+      if [ ! -d "/run/systemd/nspawn/propagate/root" ]; then
+        echo "Skipping apt clean because not running in systemd-nspawn"
+      else
+        apt clean
+      fi 
+
 {{ if eq $architecture "armhf" }}
   - action: run
     chroot: true

@@ -33,11 +33,6 @@ jobs:
             apt update && \
             apt install -y sudo debos qemu-user-static"
 
-      - name: Copy QEMU static binary
-        run: |
-          docker exec $CONTAINER_HASH bash -c "\
-            cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static"
-
       - name: Run Debos in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\

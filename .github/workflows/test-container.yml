@@ -1,4 +1,4 @@
-name: Build Lindroid RootFS
+name: teat container
 
 on:
   push:

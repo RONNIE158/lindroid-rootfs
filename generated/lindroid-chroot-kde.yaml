@@ -1,0 +1,59 @@
+architecture: amd64
+actions:
+  - action: debootstrap
+    suite: bookworm
+    components:
+      - main
+    mirror: http://deb.debian.org/debian
+    variant: minbase
+
+  - action: run
+    chroot: true
+    description: Add Lindroid repo and key
+    command: |
+      mkdir -p /etc/apt/keyrings
+      cp /buildd/sources/public-key.asc /etc/apt/keyrings/lindroid.asc
+      echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid bookworm main" > /etc/apt/sources.list.d/lindroid.list
+      apt update || true
+
+  - action: apt
+    description: Install Lindroid base packages
+    chroot: true
+    packages:
+      - libhybris
+      - libhybris-test
+      - lindroid-quirks
+      - nano
+      - strace
+      - sudo
+      - sddm
+      - adduser
+      - locales
+      - desktop-base
+      - evtest
+      - iproute2
+
+  - action: apt
+    description: Install PipeWire audio stack
+    chroot: true
+    packages:
+      - libpipewire-module-lindroid
+      - libcanberra-pulse
+      - pipewire-audio
+      - wireplumber
+      - pipewire-pulse
+      - pipewire-alsa
+      - pipewire-jack
+
+  - action: apt
+    description: Install KDE Wayland environment
+    chroot: true
+    packages:
+      - kde-full
+      - kwin-wayland
+      - qtwayland5
+      - maliit-keyboard
+      - sddm-theme-debian-breeze
+      - plasma-workspace
+      - firefox-esr
+      - drihybris

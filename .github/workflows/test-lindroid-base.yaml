@@ -36,8 +36,9 @@ jobs:
       - name: Run Debos in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
-            cd /buildd/sources && \
-            debos --internal-qemu rootfs-templates/lindroid_base.yaml"
+          cd /buildd/sources && \
+          debos rootfs-templates/lindroid_base.yaml"
+
 
       - name: Stop container
         if: always()

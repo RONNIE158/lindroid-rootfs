@@ -72,7 +72,7 @@ jobs:
         run: mkdir -p /tmp/buildd-results
 
       - name: Pull container
-        run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
+        run: docker pull quay.io/droidian/rootfs-builder:next-amd64
 
       - name: Start Container
         run: |
@@ -82,7 +82,7 @@ jobs:
             -v /sys/fs/cgroup:/sys/fs/cgroup \
             -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
-            registry.lindroid.org/lindroid/rootfs-builder:next-amd64 /sbin/init)
+            quay.io/droidian/rootfs-builder:next-amd64 /sbin/init)
           echo "CONTAINER_HASH=${CONTAINER_HASH}" >> $GITHUB_ENV
 
       - name: Wait for container init

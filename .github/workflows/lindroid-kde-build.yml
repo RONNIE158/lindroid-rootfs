@@ -24,7 +24,7 @@ jobs:
 
       - name: Run Debos
         run: |
-          sudo debos --disable-fakemachine generated/lindroid-chroot-kde.yaml
+          sudo debos --disable-fakemachine rootfs-templates/lindroid_base.yaml
 
       - name: Archive RootFS
         run: |

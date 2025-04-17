@@ -1,4 +1,4 @@
-name: Build Lindroid RootFS
+name: test container
 
 on:
   push:

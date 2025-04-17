@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_rootfs:
-    runs-on: ubuntu latest
+    runs-on: ubuntu-2w.04
     name: Build Linux Rootfs with Repository and Packages
     steps:
       - name: Checkout repository
@@ -66,7 +66,7 @@ jobs:
           path: /tmp/linux-rootfs.tar.gz
 
   prepare_android_chroot:
-    runs-on: ubuntu latest
+    runs-on: ubuntu-22.04
     needs: build_rootfs
     name: Prepare Linux Rootfs for Android Chroot
     steps:
@@ -98,7 +98,7 @@ jobs:
           path: /tmp/linux-rootfs-android
 
   cleanup:
-    runs-on: ubuntu latest
+    runs-on: ubuntu-22.04
     needs: prepare_android_chroot
     name: Cleanup
     steps:

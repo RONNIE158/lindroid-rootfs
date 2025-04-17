@@ -58,7 +58,8 @@ jobs:
             -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
-            /sbin/init)" >> $GITHUB_ENV
+            tail -f /dev/null)" >> $GITHUB_ENV
+
 
       - name: Build rootfs with injected CGroup v1 hook
         run: |

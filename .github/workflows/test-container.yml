@@ -46,9 +46,6 @@ jobs:
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
             /sbin/init)" >> $GITHUB_ENV
 
-      - name: Wait for container init
-        run: sleep 10
-
       - name: Build rootfs
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."

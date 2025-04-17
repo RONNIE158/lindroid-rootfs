@@ -57,6 +57,11 @@ actions:
       fi
 
   - action: run
+    chroot: true
+    description: Set executable permissions for scripts
+    command: chmod +x scripts/setup-user.sh scripts/setup-system.sh   
+
+  - action: run
     description: Set up default user
     chroot: true
     script: scripts/setup-user.sh {{ $username }} {{ $password }}

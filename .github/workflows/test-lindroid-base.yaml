@@ -14,37 +14,26 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup QEMU for ARM64
-        run: |
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: Pull Droidian Rootfs Builder
+        run: docker pull quay.io/droidian/rootfs-builder:next-amd64
 
-      - name: Pull container with systemd & cgroup support
-        run: docker pull jrei/systemd-debian:bookworm
-
-      - name: Start container with systemd and cgroups
+      - name: Start container
         run: |
-          echo CONTAINER_HASH=$(docker run --detach --privileged \
+          echo "CONTAINER_HASH=$(docker run --detach --privileged \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
-            -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+            -v /sys/fs/cgroup:/sys/fs/cgroup \
             -v ${PWD}:/buildd/sources \
-            --tmpfs /run \
-            --tmpfs /run/lock \
-            --cgroupns=host \
-            --cap-add=SYS_ADMIN \
-            --security-opt seccomp=unconfined \
-            jrei/systemd-debian:bookworm \
-            /sbin/init) >> $GITHUB_ENV
+            --security-opt seccomp:unconfined \
+            quay.io/droidian/rootfs-builder:next-amd64 sleep infinity)" >> $GITHUB_ENV
 
-      - name: Install deps + qemu in container
+      - name: Install dependencies inside container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
-          export DEBIAN_FRONTEND=noninteractive; \
-          apt-get update || true; \
-          apt-get install -y --no-install-recommends gnupg ca-certificates curl; \
-          apt-get install -y qemu-user-static systemd debootstrap sudo"
+            apt update && \
+            apt install -y sudo debos qemu-user-static"
 
-      - name: Run Debos
+      - name: Run Debos in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
             cd /buildd/sources && \
@@ -52,5 +41,4 @@ jobs:
 
       - name: Stop container
         if: always()
-        run: |
-          docker stop $CONTAINER_HASH || true
+        run: docker stop $CONTAINER_HASH || true

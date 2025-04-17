@@ -65,10 +65,16 @@ actions:
         echo "Some packages were not installed successfully, continuing..."
       fi
 
+   #- action: run
+    #chroot: true
+    #description: Set executable permissions for scripts
+    #command: chmod +x scripts/setup-user.sh scripts/setup-system.sh scripts/genimage.sh
+
   - action: run
     chroot: true
-    description: Set executable permissions for scripts
-    command: chmod +x scripts/setup-user.sh scripts/setup-system.sh scripts/genimage.sh
+    description: Set permission inside chroot
+    command: chmod +x /tmp/script/setup-user.sh /tmp/script/setup-system.sh
+ 
 
   - action: run
     description: Set up default user

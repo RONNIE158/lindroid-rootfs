@@ -36,4 +36,4 @@ jobs:
 
       - name: Run debos build test for lindroid_base.yaml
         run: |
-          sudo debos --disable-fakemachine --hook test-hooks.yaml recipes/lindroid_base.yaml
+          sudo debos --disable-fakemachine --hook test-hooks.yaml rootfs-templates/lindroid_base.yaml

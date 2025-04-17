@@ -18,26 +18,22 @@ jobs:
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      - name: Pull rootfs-builder container
-        run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
+      - name: Pull compatible container
+        run: docker pull ubuntu:20.04
 
-      - name: Start builder container
+      - name: Start Container with cgroup support
         run: |
-          CONTAINER_HASH=$(docker run --detach --privileged \
-            -v ${PWD}:/buildd/sources \
-            -v /tmp/buildd-results:/buildd/out \
-            -v /dev:/host-dev \
-            -v /sys/fs/cgroup:/sys/fs/cgroup \
-            --security-opt seccomp:unconfined \
-            registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
-            tail -f /dev/null)
-          echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
+         echo CONTAINER_HASH=$(docker run --detach --privileged -v /tmp/buildd-results:/buildd/out -v /dev:/host-dev -v /sys/fs/cgroup:/sys/fs/cgroup -v ${PWD}:/buildd/sources --security-opt seccomp:unconfined ubuntu:20.04 /sbin/init) >> $GITHUB_ENV
 
-      - name: Inject QEMU & run builder
+      - name: Install dependencies and qemu-aarch64-static in container
         run: |
          docker exec $CONTAINER_HASH bash -c "\
-         apt update && apt install -y qemu-user-static systemd && \
-         [ -f /usr/bin/qemu-aarch64-static ] || cp $(which qemu-aarch64-static) /usr/bin/ && \
+         apt update && apt install -y qemu-user-static systemd debootstrap && \
+         [ -f /usr/bin/qemu-aarch64-static ] || cp $(which qemu-aarch64-static) /usr/bin/"
+
+      - name: Run Debos in container
+        run: |
+         docker exec $CONTAINER_HASH bash -c "\
          cd /buildd/sources && \
          debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
 

@@ -85,7 +85,7 @@ jobs:
           echo "    mount -t cgroup -o pids pids /sys/fs/cgroup/pids" >> hooks/cgroup-v1.yaml
 
       - name: Pull builder container
-        run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
+        run: docker pull quay.io/droidian/rootfs-builder:next-amd64
 
       - name: Start Container
         run: |
@@ -95,7 +95,7 @@ jobs:
             -v /sys/fs/cgroup:/sys/fs/cgroup \
             -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
-            registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
+            quay.io/droidian/rootfs-builder:next-amd64 \
             tail -f /dev/null)" >> $GITHUB_ENV
 
 

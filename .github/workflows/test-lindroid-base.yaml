@@ -36,8 +36,10 @@ jobs:
 
       - name: Setup qemu for ARM64
         run: |
-          docker exec $CONTAINER_HASH bash -c "\
-            cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static"
+         docker exec $CONTAINER_HASH bash -c "\
+         if [ ! -f /usr/bin/qemu-aarch64-static ]; then \
+         cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static; \
+         fi"
 
       - name: Run Debos in container with --disable-fakemachine
         run: |

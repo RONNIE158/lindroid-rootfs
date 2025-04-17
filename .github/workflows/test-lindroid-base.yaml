@@ -33,13 +33,14 @@ jobs:
             tail -f /dev/null)
           echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
 
-      - name: Inject QEMU binary & run builder
+      - name: Inject QEMU & run builder
         run: |
-          docker exec $CONTAINER_HASH bash -c "\
-            apt update && apt install -y qemu-user-static && \
-            cp /usr/bin/qemu-aarch64-static /buildd/sources && \
-            cd /buildd/sources && \
-            debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+         docker exec $CONTAINER_HASH bash -c "\
+           apt update && apt install -y qemu-user-static && \
+           cp /usr/bin/qemu-aarch64-static /usr/bin/ && \
+           cd /buildd/sources && \
+           debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+
 
       - name: Stop container
         if: always()

@@ -1,4 +1,4 @@
-name: Build Lindroid KDE RootFS
+name: Build Lindroid Chroot
 
 on:
   workflow_dispatch:

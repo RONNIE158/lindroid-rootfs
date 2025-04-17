@@ -1,0 +1,37 @@
+name: Build Lindroid KDE RootFS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Debos Chroot Build
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Debos & Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y debos qemu-user-static wget
+
+      - name: Download Lindroid public key
+        run: |
+          mkdir -p sources
+          wget -O sources/public-key.asc https://repo.lindroid.org/repository/lindroid/public-key.asc
+
+      - name: Run Debos
+        run: |
+          sudo debos --disable-fakemachine generated/lindroid-chroot-kde.yaml
+
+      - name: Archive RootFS
+        run: |
+          sudo tar -czf lindroid-kde-rootfs.tar.gz -C chroot .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lindroid-kde-rootfs
+          path: lindroid-kde-rootfs.tar.gz

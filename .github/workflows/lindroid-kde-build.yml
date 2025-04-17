@@ -24,7 +24,7 @@ jobs:
 
       - name: Run Debos
         run: |
-          sudo debos --disable-fakemachine rootfs-templates/lindroid_base.yaml
+          sudo debos --disable-fakemachine generate_recipe.py
 
       - name: Archive RootFS
         run: |

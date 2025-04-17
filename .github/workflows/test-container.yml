@@ -34,17 +34,17 @@ jobs:
       - name: Create hook file for CGroup v1
         run: |
           mkdir -p hooks
-          echo "- action: run
-  description: Force cgroupv1 compatibility
-  chroot: true
-  command: |
-    mkdir -p /sys/fs/cgroup/{cpu,cpuacct,cpuset,devices,memory,pids}
-    mount -t cgroup -o cpu cpu /sys/fs/cgroup/cpu
-    mount -t cgroup -o cpuacct cpuacct /sys/fs/cgroup/cpuacct
-    mount -t cgroup -o cpuset cpuset /sys/fs/cgroup/cpuset
-    mount -t cgroup -o devices devices /sys/fs/cgroup/devices
-    mount -t cgroup -o memory memory /sys/fs/cgroup/memory
-    mount -t cgroup -o pids pids /sys/fs/cgroup/pids" > hooks/cgroup-v1.yaml
+          echo "- action: run" > hooks/cgroup-v1.yaml
+          echo "  description: Force cgroupv1 compatibility" >> hooks/cgroup-v1.yaml
+          echo "  chroot: true" >> hooks/cgroup-v1.yaml
+          echo "  command: |" >> hooks/cgroup-v1.yaml
+          echo "    mkdir -p /sys/fs/cgroup/{cpu,cpuacct,cpuset,devices,memory,pids}" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o cpu cpu /sys/fs/cgroup/cpu" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o cpuacct cpuacct /sys/fs/cgroup/cpuacct" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o cpuset cpuset /sys/fs/cgroup/cpuset" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o devices devices /sys/fs/cgroup/devices" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o memory memory /sys/fs/cgroup/memory" >> hooks/cgroup-v1.yaml
+          echo "    mount -t cgroup -o pids pids /sys/fs/cgroup/pids" >> hooks/cgroup-v1.yaml
 
       - name: Pull builder container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
@@ -58,10 +58,7 @@ jobs:
             -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
-            tail -f /dev/null)" >> $GITHUB_ENV
-
-      - name: Check container status
-        run: docker ps
+            /sbin/init)" >> $GITHUB_ENV
 
       - name: Build rootfs with injected CGroup v1 hook
         run: |

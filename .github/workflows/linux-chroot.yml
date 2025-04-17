@@ -1,0 +1,108 @@
+name: Build Linux Rootfs with Lindroid and Packages for Android Chroot
+
+on:
+  workflow_dispatch:
+  push:
+  schedule:
+    - cron: "0 3 * * *"  # Jalankan setiap hari pukul 03:00 UTC
+
+jobs:
+  build_rootfs:
+    runs-on: ubuntu-20.04
+    name: Build Linux Rootfs with Repository and Packages
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build base Linux rootfs using debootstrap
+        run: |
+          docker pull ubuntu:20.04
+          docker run --rm -v /tmp/linux-rootfs:/mnt ubuntu:20.04 bash -c "
+            apt update && apt upgrade -y && \
+            apt install -y debootstrap sudo curl vim && \
+            debootstrap --arch amd64 trixie /mnt http://deb.debian.org/debian && \
+            apt install -y sudo curl vim"
+      
+      - name: Add Lindroid repository to rootfs
+        run: |
+          docker run --rm -v /tmp/linux-rootfs:/mnt ubuntu:20.04 bash -c "
+            echo 'deb [trusted=yes] https://repo.lindroid.org/repository/lindroid trixie main' > /mnt/etc/apt/sources.list.d/lindroid.list"
+      
+      - name: Add Lindroid repo key and update
+        run: |
+          docker run --rm -v /tmp/linux-rootfs:/mnt -v ${PWD}/public-key.asc:/buildd/sources/public-key.asc ubuntu:20.04 bash -c "
+            mkdir -p /mnt/etc/apt/keyrings && \
+            cp /buildd/sources/public-key.asc /mnt/etc/apt/keyrings/lindroid.asc && \
+            echo 'deb [signed-by=/mnt/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid trixie main' > /mnt/etc/apt/sources.list.d/lindroid.list && \
+            chroot /mnt apt update || true"
+
+      - name: Install essential packages in chroot
+        run: |
+          docker run --rm -v /tmp/linux-rootfs:/mnt ubuntu:20.04 bash -c "
+            chroot /mnt apt install -y libhybris libhybris-test lindroid-quirks nano strace sudo sddm adduser locales desktop-base evtest iproute2"
+      
+      - name: Install PipeWire + audio support in chroot
+        run: |
+          docker run --rm -v /tmp/linux-rootfs:/mnt ubuntu:20.04 bash -c "
+            chroot /mnt apt install -y libpipewire-module-lindroid libcanberra-pulse pipewire-audio wireplumber pipewire-pulse pipewire-alsa pipewire-jack"
+
+      - name: Install KDE + Wayland + drihybris backend in chroot
+        run: |
+          docker run --rm -v /tmp/linux-rootfs:/mnt ubuntu:20.04 bash -c "
+            chroot /mnt apt install -y kde-full kwin-wayland qtwayland5 maliit-keyboard sddm-theme-debian-breeze plasma-workspace firefox-esr drihybris"
+
+      - name: Compress rootfs for Android
+        run: |
+          tar -czf /tmp/linux-rootfs.tar.gz -C /tmp linux-rootfs
+        # Menyimpan image rootfs yang telah dibangun
+
+      - name: Upload Linux Rootfs Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rootfs
+          path: /tmp/linux-rootfs.tar.gz
+
+  prepare_android_chroot:
+    runs-on: ubuntu-20.04
+    needs: build_rootfs
+    name: Prepare Linux Rootfs for Android Chroot
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Linux Rootfs
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-rootfs
+          path: /tmp
+
+      - name: Prepare Linux for Android Chroot
+        run: |
+          mkdir -p /tmp/linux-rootfs-android
+          tar -xzf /tmp/linux-rootfs.tar.gz -C /tmp/linux-rootfs-android
+          # Pastikan rootfs Linux siap untuk chroot pada Android
+
+      - name: Configure Linux Rootfs for Android Chroot
+        run: |
+          # Membuat symlink untuk beberapa aplikasi agar kompatibel dengan Android chroot
+          chroot /tmp/linux-rootfs-android /bin/bash -c "ln -sf /usr/bin/bash /bin/sh"
+          chroot /tmp/linux-rootfs-android /bin/bash -c "apt update && apt install -y sudo"
+
+      - name: Upload Prepared Linux Rootfs for Android Chroot
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rootfs-android
+          path: /tmp/linux-rootfs-android
+
+  cleanup:
+    runs-on: ubuntu-20.04
+    needs: prepare_android_chroot
+    name: Cleanup
+    steps:
+      - name: Cleanup Linux Rootfs
+        run: |
+          rm -rf /tmp/linux-rootfs
+          rm -rf /tmp/linux-rootfs-android

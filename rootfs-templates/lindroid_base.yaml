@@ -59,7 +59,7 @@ actions:
   - action: run
     chroot: true
     description: Set executable permissions for scripts
-    command: chmod +x scripts/setup-user.sh scripts/setup-system.sh   
+    command: chmod +x scripts/setup-user.sh scripts/setup-system.sh  scripts/genimage.sh
 
   - action: run
     description: Set up default user

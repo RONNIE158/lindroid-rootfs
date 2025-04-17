@@ -17,19 +17,19 @@ actions:
       suite: {{ $suite }}
       use_internal_repository: {{ $use_internal_repository }}
 
-  - action: run
-    chroot: true
-    description: Add Lindroid repo and key
-    command: |
-      mkdir -p /etc/apt/keyrings
-      cp public-key.asc /etc/apt/keyrings/lindroid.asc
-      echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
-      apt update || true
-
   #- action: run
     #chroot: true
-    #description: Add lindroid repo
-    #command: echo "deb [trusted=yes] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid-production.list
+    #description: Add Lindroid repo and key
+    #command: |
+      #mkdir -p /etc/apt/keyrings
+      #cp public-key.asc /etc/apt/keyrings/lindroid.asc
+      #echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
+      #apt update || true
+
+  - action: run
+    chroot: true
+    description: Add lindroid repo
+    command: echo "deb [trusted=yes] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid-production.list
 
   - action: apt
     chroot: true

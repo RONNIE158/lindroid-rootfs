@@ -101,7 +101,6 @@ jobs:
 
       - name: Build rootfs with injected CGroup v1 hook
         run: |
-          echo "Building rootfs for $LINDROID_IDENTIFIER..."
           docker exec $CONTAINER_HASH /bin/sh -c "\
             cd /buildd/sources && \
             ./generate_recipe.py && \

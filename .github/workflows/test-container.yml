@@ -1,19 +1,12 @@
-name: Build Lindroid RootFS
+name: Build Droidian RootFS
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  push:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    env:
-      current_date: 20250417
-      release_suffix: _20250417
-      LINDROID_VERSION: nightly
-      LINDROID_IDENTIFIER: arm64-base
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
@@ -21,25 +14,34 @@ jobs:
           - edition: base
             arch: arm64
 
+    env:
+      LINDROID_VERSION: nightly
+      LINDROID_IDENTIFIER: ${{ matrix.config.arch }}-${{ matrix.config.edition }}
+      current_date: ${{ github.run_started_at }}
+      release_suffix: _${{ github.run_number }}
+
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: QEMU setup
+        uses: docker/setup-qemu-action@v2
 
-      - name: Create build output dir
+      - name: Create build dir
         run: mkdir -p /tmp/buildd-results
 
-      - name: Pull builder container
+      - name: Pull container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start persistent container
+      - name: Start container
         run: |
           CONTAINER_HASH=$(docker run --detach --privileged \
+            --cap-add=SYS_ADMIN \
+            --tmpfs /tmp \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
             -v /sys/fs/cgroup:/sys/fs/cgroup \
+            -v /run:/run \
             -v ${{ github.workspace }}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
@@ -49,8 +51,10 @@ jobs:
       - name: Build rootfs
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
-          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && ./generate_recipe.py && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
+          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && ./generate_recipe.py && debos --disable-fakemachine --disable-sandbox generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Stop and remove container
         if: always()
-        run: docker rm -f $CONTAINER_HASH || true
+        run: |
+          docker stop $CONTAINER_HASH
+          docker rm $CONTAINER_HASH

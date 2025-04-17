@@ -55,7 +55,7 @@ jobs:
         run: echo "LINDROID_IDENTIFIER=${{ matrix.config.arch }}-${{ matrix.config.edition }}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           lfs: 'true'
           submodules: 'recursive'
@@ -63,10 +63,8 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      - name: Set up QEMU
+      - name: QEMU set-up
         uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64  # Tentukan platform untuk QEMU
 
       - name: Create build dir
         run: mkdir -p /tmp/buildd-results

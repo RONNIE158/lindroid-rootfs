@@ -1,0 +1,29 @@
+name: Auto Clear Failed Workflows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  delete-failed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt update
+          sudo apt install -y gh jq
+
+      - name: Authenticate with GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+
+      - name: Delete failed workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --limit 100 --json databaseId,status -q '.[] | select(.status=="failure") | .databaseId' | while read run_id; do
+            echo "Deleting failed workflow run ID $run_id"
+            gh api -X DELETE /repos/${{ github.repository }}/actions/runs/$run_id
+          done

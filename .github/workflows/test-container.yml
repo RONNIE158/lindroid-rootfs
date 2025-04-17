@@ -11,7 +11,6 @@ jobs:
 
     env:
       current_date: 20250417
-      release_suffix: _20250417
       LINDROID_VERSION: nightly
       LINDROID_IDENTIFIER: arm64-base
 

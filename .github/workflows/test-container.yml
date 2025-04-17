@@ -1,4 +1,4 @@
-name: test container
+name: Build Lindroid RootFS
 
 on:
   push:
@@ -29,16 +29,17 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - name: Create build output dir
-        run: mkdir -p /tmp/buildd-results hooks
+        run: mkdir -p /tmp/buildd-results
 
-      - name: Create cgroup‑v1 & disable apt‑clean hook
+      - name: Create hook file for CGroup v1
         run: |
-          cat > hooks/cgroup-and-no-clean.yaml << 'EOF'
+          mkdir -p hooks
+          cat > hooks/cgroup-v1.yaml << 'EOF'
+          
 - action: run
-  description: Enable legacy CGroup v1 & disable apt clean
+  description: Force cgroupv1 compatibility
   chroot: true
   command: |
-    #=== mount legacy cgroup v1 controllers ===
     mkdir -p /sys/fs/cgroup/{cpu,cpuacct,cpuset,devices,memory,pids}
     mount -t cgroup -o cpu cpu /sys/fs/cgroup/cpu
     mount -t cgroup -o cpuacct cpuacct /sys/fs/cgroup/cpuacct
@@ -46,10 +47,6 @@ jobs:
     mount -t cgroup -o devices devices /sys/fs/cgroup/devices
     mount -t cgroup -o memory memory /sys/fs/cgroup/memory
     mount -t cgroup -o pids pids /sys/fs/cgroup/pids
-
-    #=== stub out apt clean ===
-    echo -e '#!/bin/sh\nexit 0' > /usr/sbin/apt-clean
-    chmod +x /usr/sbin/apt-clean
 EOF
 
       - name: Pull builder container
@@ -66,20 +63,15 @@ EOF
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
             /sbin/init) >> $GITHUB_ENV
 
-      - name: Build rootfs
+      - name: Build rootfs with injected CGroup v1 hook
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
           docker exec $CONTAINER_HASH /bin/sh -c "\
             cd /buildd/sources && \
             ./generate_recipe.py && \
-            # inject our hook before debos runs
-            cp hooks/cgroup-and-no-clean.yaml generated/hook.yaml && \
-            # remove any built‑in apt clean actions
-            sed -i '/description: apt clean/,/command: apt clean/d' generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml && \
-            # run debos with our hook
-            debos --disable-fakemachine \
-              --recipe-hook generated/hook.yaml \
-              generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
+            sed -i '/^actions:/r hooks/cgroup-v1.yaml' \
+              generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml && \
+            debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Stop and remove container
         if: always()

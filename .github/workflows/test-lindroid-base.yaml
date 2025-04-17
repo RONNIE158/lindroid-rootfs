@@ -39,8 +39,10 @@ jobs:
       - name: Install deps + qemu in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
-            apt update && apt install -y qemu-user-static systemd debootstrap sudo && \
-            [ -f /usr/bin/qemu-aarch64-static ] || cp \$(which qemu-aarch64-static) /usr/bin/"
+          export DEBIAN_FRONTEND=noninteractive; \
+          apt-get update || true; \
+          apt-get install -y --no-install-recommends gnupg ca-certificates curl; \
+          apt-get install -y qemu-user-static systemd debootstrap sudo"
 
       - name: Run Debos
         run: |

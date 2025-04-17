@@ -64,27 +64,16 @@ actions:
       if [ $? -ne 0 ]; then
         echo "Some packages were not installed successfully, continuing..."
       fi
-
-   #- action: run
+      
+  #- action: run
+    #description: Set up default user
     #chroot: true
-    #description: Set executable permissions for scripts
-    #command: chmod +x scripts/setup-user.sh scripts/setup-system.sh scripts/genimage.sh
+    #script: scripts/setup-user.sh {{ $username }} {{ $password }}
 
-  - action: run
-    chroot: true
-    description: Set permission inside chroot
-    command: chmod +x /tmp/script/setup-user.sh /tmp/script/setup-system.sh
- 
-
-  - action: run
-    description: Set up default user
-    chroot: true
-    script: scripts/setup-user.sh {{ $username }} {{ $password }}
-
-  - action: run
-    description: Set up system
-    chroot: true
-    script: scripts/setup-system.sh {{ $hostname }}
+  #- action: run
+    #description: Set up system
+    #chroot: true
+    #script: scripts/setup-system.sh {{ $hostname }}
 
   - action: run
     chroot: true

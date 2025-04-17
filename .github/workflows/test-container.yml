@@ -104,7 +104,7 @@ jobs:
           docker exec $CONTAINER_HASH /bin/sh -c "\
             cd /buildd/sources && \
             ./generate_recipe.py && \
-            sed -i '/^actions:/r hooks/cgroup-v1.yaml' /
+            sed -i '/^actions:/r hooks/cgroup-v1.yaml' \
             debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
       
       - name: Stop and remove container

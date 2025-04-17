@@ -12,7 +12,7 @@ actions:
     description: Add Lindroid repo and key
     command: |
       mkdir -p /etc/apt/keyrings
-      cp /buildd/sources/public-key.asc /etc/apt/keyrings/lindroid.asc
+      cp public-key.asc /etc/apt/keyrings/lindroid.asc
       echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid bookworm main" > /etc/apt/sources.list.d/lindroid.list
       apt update || true
 

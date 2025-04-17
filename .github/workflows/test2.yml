@@ -29,16 +29,16 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - name: Create build output dir
-        run: mkdir -p /tmp/buildd-results
+        run: mkdir -p /tmp/buildd-results hooks
 
-      - name: Create cgroupv1 fix hook
+      - name: Create cgroup‑v1 & disable apt‑clean hook
         run: |
-          mkdir -p hooks
-          cat > hooks/cgroup-v1.yaml <<'EOF'
+          cat > hooks/cgroup-and-no-clean.yaml << 'EOF'
 - action: run
-  description: Enable legacy CGroup v1 for compatibility
+  description: Enable legacy CGroup v1 & disable apt clean
   chroot: true
   command: |
+    #=== mount legacy cgroup v1 controllers ===
     mkdir -p /sys/fs/cgroup/{cpu,cpuacct,cpuset,devices,memory,pids}
     mount -t cgroup -o cpu cpu /sys/fs/cgroup/cpu
     mount -t cgroup -o cpuacct cpuacct /sys/fs/cgroup/cpuacct
@@ -46,8 +46,10 @@ jobs:
     mount -t cgroup -o devices devices /sys/fs/cgroup/devices
     mount -t cgroup -o memory memory /sys/fs/cgroup/memory
     mount -t cgroup -o pids pids /sys/fs/cgroup/pids
-    echo -e '#!/bin/sh\nexit 0' > /etc/apt/apt.conf.d/99no-clean
-    chmod +x /etc/apt/apt.conf.d/99no-clean
+
+    #=== stub out apt clean ===
+    echo -e '#!/bin/sh\nexit 0' > /usr/sbin/apt-clean
+    chmod +x /usr/sbin/apt-clean
 EOF
 
       - name: Pull builder container
@@ -55,25 +57,29 @@ EOF
 
       - name: Start Container
         run: |
-          CONTAINER_HASH=$(docker run --detach --privileged \
+          echo CONTAINER_HASH=$(docker run --detach --privileged \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
             -v /sys/fs/cgroup:/sys/fs/cgroup \
-            -v ${{ github.workspace }}:/buildd/sources \
+            -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
-            /sbin/init)
-          echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
+            /sbin/init) >> $GITHUB_ENV
 
       - name: Build rootfs
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
-          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && \
+          docker exec $CONTAINER_HASH /bin/sh -c "\
+            cd /buildd/sources && \
             ./generate_recipe.py && \
-            cp hooks/cgroup-v1.yaml generated/hook-cgroupv1.yaml && \
+            # inject our hook before debos runs
+            cp hooks/cgroup-and-no-clean.yaml generated/hook.yaml && \
+            # remove any built‑in apt clean actions
+            sed -i '/description: apt clean/,/command: apt clean/d' generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml && \
+            # run debos with our hook
             debos --disable-fakemachine \
-              generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml \
-              --recipe-hook generated/hook-cgroupv1.yaml"
+              --recipe-hook generated/hook.yaml \
+              generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Stop and remove container
         if: always()

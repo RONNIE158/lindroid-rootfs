@@ -10,7 +10,7 @@ on:
 
 jobs:
   once:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     name: Generate matrix
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
@@ -19,29 +19,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq python3
-
       - name: Generate matrix
         id: gen-matrix
         run: |
-          # Menjalankan Python script dan mendapatkan output matrix
-          JOBS=$(./generate_recipe.py --matrix)
-          
-          # Menyimpan output ke file matrix.json
-          echo "$JOBS" > matrix.json
-
-          # Tampilkan hasil matrix.json untuk memastikan output benar
-          cat matrix.json
-
-          # Mengonversi isi file JSON menjadi format yang dapat dibaca oleh GitHub Actions
-          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
-        shell: bash
+          JOBS="$(./generate_recipe.py --matrix)"
+          echo "matrix=$(echo "${JOBS}" | jq -c .)" >> $GITHUB_ENV
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: once
 
     strategy:
@@ -69,7 +54,7 @@ jobs:
       - name: Set identifier
         run: echo "LINDROID_IDENTIFIER=${{ matrix.config.arch }}-${{ matrix.config.edition }}" >> $GITHUB_ENV
 
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v2
         with:
           lfs: 'true'
@@ -78,26 +63,137 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      - name: Set up QEMU
+      - name: QEMU set-up
         uses: docker/setup-qemu-action@v1
 
-      - name: Create build directory
+      - name: Create build dir
         run: mkdir -p /tmp/buildd-results
 
       - name: Pull container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start container
+      - name: Start Container
         run: echo CONTAINER_HASH=$(docker run --detach --privileged -v /tmp/buildd-results:/buildd/out -v /dev:/host-dev -v /sys/fs/cgroup:/sys/fs/cgroup -v ${PWD}:/buildd/sources --security-opt seccomp:unconfined registry.lindroid.org/lindroid/rootfs-builder:next-amd64 /sbin/init) >> $GITHUB_ENV
 
       - name: Build rootfs
         run: |
-          docker exec $CONTAINER_HASH /bin/sh -c 'cd /buildd/sources; ./generate_recipe.py && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml'
+          docker exec $CONTAINER_HASH /bin/sh -c 'cd /buildd/sources; ./generate_recipe.py  && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml'
 
-      - name: Upload build artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lindroid-out-${{ matrix.config.arch }}-${{ matrix.config.edition }}
           path: out/*
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
+
+  prepare:
+    runs-on: ubuntu-20.04
+    name: Create GitHub release
+    needs: build
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}${{ steps.create_nightly.outputs.upload_url }}
+
+    steps:
+      - name: Free up some storage
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Delete old nightly release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.1
+        if: startsWith(github.ref, 'refs/tags/lindroid') != true
+        with:
+          delete_release: true # default: false
+          tag_name: nightly # tag name to delete
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Tag snapshot
+        if: startsWith(github.ref, 'refs/tags/lindroid') != true
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          tag: nightly
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: lindroid-out
+
+      - name: Create SHA256SUMS
+        run: |
+          cd lindroid-out
+          for x in lindroid-out-*; do
+            cd $x
+            sha256sum * >> ../SHA256SUMS
+            cd ..
+          done
+
+      - name: Create stable release (drafted)
+        id: create_release
+        if: startsWith(github.ref, 'refs/tags/lindroid')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: lindroid-out/SHA256SUMS
+          tag_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Create nightly release
+        id: create_nightly
+        if: startsWith(github.ref, 'refs/tags/lindroid') != true
+        uses: softprops/action-gh-release@v1
+        with:
+          files: lindroid-out/SHA256SUMS
+          tag_name: nightly
+          draft: false
+          prerelease: true
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+  publish:
+    runs-on: ubuntu-20.04
+    needs: [once, prepare]
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}${{ steps.create_nightly.outputs.upload_url }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.once.outputs.matrix) }}
+
+    name: Publish ${{ matrix.config.job_name }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: lindroid-out-${{ matrix.config.arch }}-${{ matrix.config.edition }}
+          path: lindroid-out
+
+      - name: Create stable release (drafted)
+        id: create_release
+        if: startsWith(github.ref, 'refs/tags/lindroid')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: lindroid-out/*
+          tag_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+
+      - name: Create nightly release
+        id: create_nightly
+        if: startsWith(github.ref, 'refs/tags/lindroid') != true
+        uses: softprops/action-gh-release@v1
+        with:
+          files: lindroid-out/*
+          tag_name: nightly
+          draft: false
+          prerelease: true
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

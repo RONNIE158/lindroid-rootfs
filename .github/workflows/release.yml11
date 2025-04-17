@@ -64,7 +64,7 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: QEMU set-up
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
 
       - name: Create build dir
         run: mkdir -p /tmp/buildd-results

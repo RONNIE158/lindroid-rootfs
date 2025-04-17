@@ -20,10 +20,9 @@ jobs:
         run: |
           mkdir -p generated out
 
-      - name: Generate lindroid-chroot-kde.yaml
+      - name: Run Debos
         run: |
-          cat << 'EOF' > generated/lindroid-chroot-kde.yaml
-          architecture: arm64
+          sudo debos --disable-fakemachine generated/lindroid-chroot-kde.yaml
 
           actions:
             - action: debootstrap

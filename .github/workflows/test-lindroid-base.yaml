@@ -1,12 +1,7 @@
-name: Build Lindroid RootFS
+name: Build Lindroid Base RootFS
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -53,7 +48,7 @@ jobs:
     - name: Run Debos to build rootfs
       run: docker exec $CONTAINER_HASH bash -c "\
         cd /buildd/sources && \
-        debos rootfs-templates/lindroid_base.yaml"
+        debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
 
     # Copy the result to the host
     - name: Copy result to host

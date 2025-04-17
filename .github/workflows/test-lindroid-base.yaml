@@ -27,13 +27,14 @@ jobs:
           sudo apt update
           sudo apt install -y debos qemu-user-static binfmt-support
 
-      - name: Manual apt clean workaround for Docker safety
+      - name: Create hook file for apt clean
         run: |
-          echo "- action: run" > test-hooks.yaml
-          echo "  chroot: true" >> test-hooks.yaml
-          echo "  description: Clean apt cache" >> test-hooks.yaml
-          echo "  command: rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*" >> test-hooks.yaml
+          mkdir -p hooks
+          echo "- action: run" > hooks/apt-clean.yaml
+          echo "  chroot: true" >> hooks/apt-clean.yaml
+          echo "  description: Clean apt cache" >> hooks/apt-clean.yaml
+          echo "  command: rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*" >> hooks/apt-clean.yaml
 
       - name: Run debos build test for lindroid_base.yaml
         run: |
-          sudo debos --disable-fakemachine --hook test-hooks.yaml rootfs-templates/lindroid_base.yaml
+          sudo debos --disable-fakemachine --hooks hooks rootfs-templates/lindroid_base.yaml

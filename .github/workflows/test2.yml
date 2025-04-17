@@ -34,26 +34,27 @@ jobs:
       - name: Pull builder container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start persistent container (for LXC)
+      - name: Start persistent container (CGroup v1, mount only devices cgroup)
         run: |
           CONTAINER_HASH=$(docker run --detach --privileged \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
-            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            -v /sys/fs/cgroup/devices:/sys/fs/cgroup/devices:rw \  # Mount cgroup devices only
             -v ${{ github.workspace }}:/buildd/sources \
             --security-opt seccomp:unconfined \
             --mount type=tmpfs,destination=/tmp \
             --mount type=tmpfs,destination=/run \
             --mount type=tmpfs,destination=/payload \
+            --env CGROUP_MODE=cgroupv1 \  # Force cgroup v1 usage via environment variable
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
             sleep infinity)
           echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
 
-      - name: Build rootfs (LXC-compatible)
+      - name: Build rootfs (LXC-compatible, CGroup v1)
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
           docker exec $CONTAINER_HASH /bin/sh -c "
-            # Disable unnecessary cgroup v2 dependencies
+            # Disable unnecessary cgroup v2 dependencies for compatibility with cgroup v1
             sed -i 's/cgroup2/cgroup1/g' /etc/debos/* # Modify debos recipe if needed
             cd /buildd/sources && \
             ./generate_recipe.py && \

@@ -18,24 +18,26 @@ jobs:
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      - name: Pull compatible container
-        run: docker pull ubuntu:20.04
+      - name: Pull systemd-enabled container (for LXC support)
+        run: docker pull ghcr.io/utensils/docker-debian-systemd:bookworm
 
-      - name: Start Container with cgroup support
+      - name: Start container with systemd + cgroup support
         run: |
-          echo CONTAINER_HASH=$(docker run --detach --privileged -v /tmp/buildd-results:/buildd/out -v /dev:/host-dev -v /sys/fs/cgroup:/sys/fs/cgroup -v ${PWD}:/buildd/sources --security-opt seccomp:unconfined ubuntu:20.04 /sbin/init) >> $GITHUB_ENV
+          echo CONTAINER_HASH=$(docker run --detach --privileged \
+            --cgroupns=host \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+            -v ${PWD}:/buildd/sources \
+            -v /tmp/buildd-results:/buildd/out \
+            --security-opt seccomp=unconfined \
+            ghcr.io/utensils/docker-debian-systemd:bookworm) >> $GITHUB_ENV
 
-      - name: Install dependencies and qemu-aarch64-static in container
+      - name: Install deps and QEMU in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
-            apt update && apt install -y qemu-user-static systemd debootstrap && \
+            apt update && apt install -y qemu-user-static debootstrap debos systemd && \
             [ -f /usr/bin/qemu-aarch64-static ] || cp $(which qemu-aarch64-static) /usr/bin/"
 
-      - name: Verify container status
-        run: |
-          docker exec $CONTAINER_HASH bash -c "ps aux"  # Verifikasi apakah systemd berjalan dengan baik
-
-      - name: Run Debos in container
+      - name: Run Debos
         run: |
           docker exec $CONTAINER_HASH bash -c "\
             cd /buildd/sources && \
@@ -43,5 +45,4 @@ jobs:
 
       - name: Stop container
         if: always()
-        run: |
-          docker stop $CONTAINER_HASH || true
+        run: docker stop $CONTAINER_HASH || true

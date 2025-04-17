@@ -33,11 +33,16 @@ jobs:
             apt update && \
             apt install -y sudo debos qemu-user-static"
 
+      - name: Copy QEMU static binary
+        run: |
+          docker exec $CONTAINER_HASH bash -c "\
+            cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static"
+
       - name: Run Debos in container
         run: |
           docker exec $CONTAINER_HASH bash -c "\
             cd /buildd/sources && \
-            debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+            debos --internal-qemu rootfs-templates/lindroid_base.yaml"
 
       - name: Stop container
         if: always()

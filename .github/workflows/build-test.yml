@@ -10,7 +10,7 @@ on:
 
 jobs:
   once:
-    runs-on: ubuntu-20.04  # Diperbarui dari ubuntu-20.04
+    runs-on: ubuntu-21.04  # Diperbarui dari ubuntu-20.04
     name: Generate matrix
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
@@ -26,7 +26,7 @@ jobs:
           echo ::set-output name=matrix::${JOBS}
 
   build:
-    runs-on: ubuntu-20.04  # Diperbarui dari ubuntu-20.04
+    runs-on: ubuntu-21.04  # Diperbarui dari ubuntu-20.04
     needs: once
 
     strategy:
@@ -101,7 +101,7 @@ jobs:
           retention-days: 1
 
   prepare:
-    runs-on: ubuntu-20.04  # Diperbarui dari ubuntu-20.04
+    runs-on: ubuntu-21.04  # Diperbarui dari ubuntu-20.04
     name: Create GitHub release
     needs: build
     outputs:

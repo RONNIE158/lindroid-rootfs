@@ -39,11 +39,6 @@ jobs:
         quay.io/droidian/rootfs-builder:next-amd64 /sbin/init) \
         >> $GITHUB_ENV
 
-    # Set up qemu-aarch64-static in the container
-    - name: Set up qemu-aarch64-static
-      run: docker exec $CONTAINER_HASH bash -c "\
-        cp \$(command -v qemu-aarch64-static) /usr/bin/qemu-aarch64-static"
-
     # Run debos to build the rootfs
     - name: Run Debos to build rootfs
       run: docker exec $CONTAINER_HASH bash -c "\

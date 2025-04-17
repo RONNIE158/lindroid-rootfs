@@ -1,4 +1,4 @@
-name: Build Lindroid RootFS (CGroup v1 Compatible)
+name: Build Lindroid RootFS (CGroup v1 RootFS)
 
 on:
   push:
@@ -34,39 +34,38 @@ jobs:
       - name: Pull builder container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start persistent container
+      - name: Start Container
         run: |
-          CONTAINER_HASH=$(docker run --detach --privileged \
+          echo "CONTAINER_HASH=$(docker run --detach --privileged \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
-            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-            -v ${{ github.workspace }}:/buildd/sources \
+            -v /sys/fs/cgroup:/sys/fs/cgroup \
+            -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
-            sleep infinity)
-          echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
+            /sbin/init)" >> $GITHUB_ENV
 
-      - name: Inject cgroup v1 compatibility to recipe
+      - name: Inject cgroup v1 config for rootfs
         run: |
-          echo "Injecting cgroup v1 compatibility to recipe..."
           mkdir -p ./generated/hooks
           cat <<EOF > ./generated/hooks/cgroupv1.yaml
 actions:
   - action: run
-    description: Enforce systemd use cgroup v1
+    description: Configure systemd for CGroup v1
     command: |
       mkdir -p /target/etc/systemd/system.conf.d
       echo -e "[Manager]\nDefaultControllers=\nLegacyControllers=cpu,memory,cpuset,devices,freezer,pids" > /target/etc/systemd/system.conf.d/cgroupv1.conf
       echo -e "[Service]\nEnvironment=SYSTEMD_UNIFIED_CGROUP_HIERARCHY=0" > /target/etc/systemd/system.conf.d/env.conf
 EOF
 
-      - name: Build rootfs
+      - name: Build rootfs with cgroup v1
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
-          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && \
+          docker exec $CONTAINER_HASH /bin/sh -c "\
+            cd /buildd/sources && \
             ./generate_recipe.py && \
             cat ./generated/hooks/cgroupv1.yaml >> ./generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml && \
-            debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
+            debos --disable-fakemachine ./generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Stop and remove container
         if: always()

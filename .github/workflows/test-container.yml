@@ -34,25 +34,22 @@ jobs:
       - name: Pull builder container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start persistent container (LXC-friendly)
+      - name: Start persistent container
         run: |
-          CONTAINER_HASH=$(docker run --detach \
-            --cap-add=SYS_ADMIN \
-            --cap-add=NET_ADMIN \
-            --device /dev/fuse \
+          CONTAINER_HASH=$(docker run --detach --privileged \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
             -v /sys/fs/cgroup:/sys/fs/cgroup \
             -v ${{ github.workspace }}:/buildd/sources \
-            --security-opt seccomp=unconfined \
+            --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
             sleep infinity)
           echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
 
-      - name: Build rootfs
+      - name: Build rootfs with CGroup 1 Compatibility
         run: |
           echo "Building rootfs for $LINDROID_IDENTIFIER..."
-          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && ./generate_recipe.py && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
+          docker exec $CONTAINER_HASH /bin/sh -c "export CGROUP_V2=0 && cd /buildd/sources && ./generate_recipe.py && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Stop and remove container
         if: always()

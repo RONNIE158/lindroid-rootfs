@@ -38,12 +38,6 @@ jobs:
               variant: minbase
 
             - action: run
-              description: Add Lindroid repo
-              chroot: true
-              command: |
-                echo "deb [trusted=yes] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
-            
-            - action: run
                chroot: true
                 description: Add Lindroid repo and key
                 command: |

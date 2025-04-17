@@ -1,0 +1,39 @@
+name: Test Lindroid Base RootFS
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "recipes/lindroid_base.yaml"
+      - ".github/workflows/test-lindroid-base.yaml"
+  push:
+    branches:
+      - trixie
+
+jobs:
+  test-rootfs-builder:
+    name: Build test rootfs from lindroid_base.yaml
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU (required by debos)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install Debos dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y debos qemu-user-static binfmt-support
+
+      - name: Manual apt clean workaround for Docker safety
+        run: |
+          echo "- action: run" > test-hooks.yaml
+          echo "  chroot: true" >> test-hooks.yaml
+          echo "  description: Clean apt cache" >> test-hooks.yaml
+          echo "  command: rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*" >> test-hooks.yaml
+
+      - name: Run debos build test for lindroid_base.yaml
+        run: |
+          sudo debos --disable-fakemachine --hook test-hooks.yaml recipes/lindroid_base.yaml

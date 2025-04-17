@@ -1,49 +1,47 @@
-name: Test Lindroid Base RootFS Builder
+name: Build Lindroid Base RootFS
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - trixie
-  pull_request:
-    paths:
-      - 'rootfs-templates/lindroid_base.yaml'
-      - '.github/workflows/test-rootfs-builder.yaml'
 
 jobs:
-  build-test:
-    name: Build lindroid_base.yaml
-    runs-on: ubuntu-22.04
+  build-rootfs:
+    runs-on: ubuntu-latest
+    env:
+      SUITE: trixie
+      ARCH: arm64
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Create build output dir
-        run: mkdir -p /tmp/buildd-results
+      - name: Setup QEMU for ARM64
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      - name: Pull builder container
+      - name: Pull rootfs-builder container
         run: docker pull registry.lindroid.org/lindroid/rootfs-builder:next-amd64
 
-      - name: Start container
+      - name: Start builder container
         run: |
           CONTAINER_HASH=$(docker run --detach --privileged \
+            -v ${PWD}:/buildd/sources \
             -v /tmp/buildd-results:/buildd/out \
             -v /dev:/host-dev \
             -v /sys/fs/cgroup:/sys/fs/cgroup \
-            -v ${PWD}:/buildd/sources \
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 \
             tail -f /dev/null)
           echo "CONTAINER_HASH=$CONTAINER_HASH" >> $GITHUB_ENV
 
-      - name: Build lindroid_base.yaml in container
+      - name: Inject QEMU binary & run builder
         run: |
-          docker exec $CONTAINER_HASH /bin/bash -c "\
+          docker exec $CONTAINER_HASH bash -c "\
+            apt update && apt install -y qemu-user-static && \
+            cp /usr/bin/qemu-aarch64-static /buildd/sources && \
             cd /buildd/sources && \
             debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
 
-      - name: Stop and remove container
+      - name: Stop container
         if: always()
         run: |
-          docker rm -f $CONTAINER_HASH || true
+          docker stop $CONTAINER_HASH || true

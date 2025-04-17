@@ -84,9 +84,13 @@ jobs:
             --security-opt seccomp:unconfined \
             registry.lindroid.org/lindroid/rootfs-builder:next-amd64 /sbin/init)
           echo "CONTAINER_HASH=${CONTAINER_HASH}" >> $GITHUB_ENV
+
+      - name: Wait for container init
+        run: sleep 10  
+      
       - name: Build rootfs
         run: |
-          docker exec $CONTAINER_HASH /bin/sh -c 'cd /buildd/sources; ./generate_recipe.py  && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml'
+          docker exec $CONTAINER_HASH /bin/sh -c "cd /buildd/sources && ./generate_recipe.py && debos --disable-fakemachine generated/lindroid-${{ matrix.config.edition }}-${{ matrix.config.arch }}.yaml"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

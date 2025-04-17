@@ -38,6 +38,14 @@ jobs:
               chroot: true
               command: |
                 echo "deb [trusted=yes] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
+             - action: run
+                chroot: true
+                description: Add Lindroid repo and key
+                command: |
+                   mkdir -p /etc/apt/keyrings
+                   cp /buildd/sources/public-key.asc /etc/apt/keyrings/lindroid.asc
+                   echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
+                   apt update || true
 
             - action: apt
               description: Install essential packages

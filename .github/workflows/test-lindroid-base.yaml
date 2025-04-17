@@ -36,10 +36,11 @@ jobs:
       - name: Inject QEMU & run builder
         run: |
          docker exec $CONTAINER_HASH bash -c "\
-           apt update && apt install -y qemu-user-static && \
-           cp /usr/bin/qemu-aarch64-static /usr/bin/ && \
-           cd /buildd/sources && \
-           debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+         apt update && apt install -y qemu-user-static && \
+         [ -f /usr/bin/qemu-aarch64-static ] || cp $(which qemu-aarch64-static) /usr/bin/ && \
+         cd /buildd/sources && \
+         debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+
 
 
       - name: Stop container

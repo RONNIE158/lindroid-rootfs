@@ -37,13 +37,12 @@ jobs:
         -v ${PWD}:/buildd/sources \
         --security-opt seccomp:unconfined \
         quay.io/droidian/rootfs-builder:next-amd64 /sbin/init) \
-        >> $GITHUB_ENV
-
-    # Run debos to build the rootfs
-    - name: Run Debos to build rootfs
-      run: docker exec $CONTAINER_HASH bash -c "\
-        cd /buildd/sources && \
-        debos --disable-fakemachine rootfs-templates/lindroid_base.yaml"
+    
+    - name: Build rootfs
+      run: |
+         docker exec $CONTAINER_HASH /bin/sh -c "\
+         cd /buildd/sources && \
+         debos --disable-fakemachine rootfs-templates/lindroid_base.yaml'
 
     # Copy the result to the host
     - name: Copy result to host

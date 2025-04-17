@@ -17,10 +17,11 @@ jobs:
           sudo apt update
           sudo apt install -y debos qemu-user-static wget
 
-      - name: Download Lindroid public key
+      - name: Copy Lindroid GPG key from repo
         run: |
-          mkdir -p sources
-          wget -O sources/public-key.asc https://repo.lindroid.org/repository/lindroid/public-key.asc
+          mkdir -p rootfs/buildd/sources
+          cp public-key.asc rootfs/buildd/sources/public-key.asc
+
 
       - name: Run Debos
         run: |

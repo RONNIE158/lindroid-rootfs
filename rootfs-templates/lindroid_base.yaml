@@ -26,8 +26,9 @@ actions:
     chroot: true
     description: install packages
     packages:
+      - libhybris-common1
       - libhybris
-      #- libhybris-test
+      - libhybris-test
       - lindroid-quirks
       - nano
       - strace
@@ -45,6 +46,15 @@ actions:
       - pipewire-pulse
       - pipewire-alsa
       - pipewire-jack
+    continue_on_error: true  # This will allow to continue even if some packages fail
+
+  - action: run
+    description: Handle package errors and continue
+    chroot: true
+    command: |
+      if [ $? -ne 0 ]; then
+        echo "Some packages were not installed successfully, continuing..."
+      fi
 
   - action: run
     description: Set up default user

@@ -17,6 +17,13 @@ jobs:
           sudo apt update
           sudo apt install -y debos qemu-user-static wget
 
+      - name: Make shell scripts executable
+        run: |
+         chmod +x rootfs-templates/scripts/genimage.sh
+         chmod +x rootfs-templates/scripts/setup-system.sh
+         chmod +x rootfs-templates/scripts/setup-user.sh
+         chmod +x public-key.asc
+
       - name: Copy Lindroid GPG key from repo
         run: |
           mkdir -p rootfs/buildd/sources

@@ -65,15 +65,15 @@ actions:
         echo "Some packages were not installed successfully, continuing..."
       fi
       
-  #- action: run
-    #description: Set up default user
-    #chroot: true
-    #script: scripts/setup-user.sh {{ $username }} {{ $password }}
+  - action: run
+    description: Set up default user
+    chroot: true
+    script: scripts/setup-user.sh {{ $username }} {{ $password }}
 
-  #- action: run
-    #description: Set up system
-    #chroot: true
-    #script: scripts/setup-system.sh {{ $hostname }}
+  - action: run
+    description: Set up system
+    chroot: true
+    script: scripts/setup-system.sh {{ $hostname }}
 
   - action: run
     chroot: true

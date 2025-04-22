@@ -13,7 +13,7 @@ actions:
     command: |
       mkdir -p /etc/apt/keyrings
       cp public-key.asc /etc/apt/keyrings/lindroid.asc
-      echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid bookworm main" > /etc/apt/sources.list.d/lindroid.list
+      echo "deb [signed-by=/etc/apt/keyrings/lindroid.asc] https://repo.lindroid.org/repository/lindroid trixie main" > /etc/apt/sources.list.d/lindroid.list
       apt update || true
 
   - action: apt
